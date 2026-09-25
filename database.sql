@@ -61,3 +61,14 @@ CREATE TABLE answers (
         REFERENCES questions(id)
         ON DELETE CASCADE
 );
+
+CREATE TABLE question_options (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question_id INT NOT NULL,
+    option_text VARCHAR(255) NOT NULL,
+    option_order INT DEFAULT 1,
+
+    FOREIGN KEY (question_id)
+        REFERENCES questions(id)
+        ON DELETE CASCADE
+);
