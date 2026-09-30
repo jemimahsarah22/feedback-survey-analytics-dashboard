@@ -25,18 +25,19 @@ if (isset($_GET["survey_id"]) && is_numeric($_GET["survey_id"])) {
 
 <body>
 
-    <h1>Thank You!</h1>
+    <h1>Response Submitted Successfully!!!</h1>
 
     <hr>
 
-    <h2>Your response has been submitted successfully.</h2>
+    <h2>Your response has been saved successfully.</h2>
 
     <p>
         Thank you for taking the time to complete this survey.
+        Your feedback had been recored successfully.
     </p>
 
     <p>
-        Your feedback has been recorded successfully.
+        You can now return to the survey or view otehr available surveys.
     </p>
 
     <hr>
