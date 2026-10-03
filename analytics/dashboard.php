@@ -257,6 +257,86 @@ if ($survey_id > 0) {
 
 
 /* =====================================================
+   MULTIPLE CHOICE DISTRIBUTION
+   ===================================================== */
+
+$multiple_choice = [];
+
+if ($survey_id > 0) {
+
+    $sql = "
+        SELECT
+            q.id AS question_id,
+            q.question_text,
+            qo.option_text,
+            COUNT(a.id) AS response_count
+        FROM questions q
+        JOIN question_options qo
+            ON qo.question_id = q.id
+        LEFT JOIN answers a
+            ON a.question_id = q.id
+            AND a.answer_text = CAST(qo.id AS CHAR)
+        LEFT JOIN responses r
+            ON a.response_id = r.id
+            AND r.survey_id = ?
+        WHERE q.survey_id = ?
+          AND q.question_type = 'multiple_choice'
+    ";
+
+    $params = [$survey_id, $survey_id];
+    $types = "ii";
+
+    if ($start_date !== "" && $end_date !== "") {
+        $sql .= "
+            AND DATE(r.submitted_at)
+            BETWEEN ? AND ?
+        ";
+
+        $params[] = $start_date;
+        $params[] = $end_date;
+        $types .= "ss";
+    }
+
+    $sql .= "
+        GROUP BY
+            q.id,
+            q.question_text,
+            qo.id,
+            qo.option_text,
+            qo.option_order
+
+        ORDER BY
+            q.id,
+            qo.option_order
+    ";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+
+        $question_id = (int)$row["question_id"];
+
+        if (!isset($multiple_choice[$question_id])) {
+            $multiple_choice[$question_id] = [
+                "question_text" => $row["question_text"],
+                "options" => []
+            ];
+        }
+
+        $multiple_choice[$question_id]["options"][] = [
+            "option_text" => $row["option_text"],
+            "response_count" => (int)$row["response_count"]
+        ];
+    }
+
+    $stmt->close();
+}
+
+/* =====================================================
    TEXT FEEDBACK
    ===================================================== */
 
@@ -931,6 +1011,69 @@ if ($survey_id > 0) {
 
     </div>
 
+
+        <!-- MULTIPLE CHOICE -->
+
+    <div class="section">
+
+        <h2>
+            Multiple Choice Results
+        </h2>
+
+        <?php if (count($multiple_choice) > 0): ?>
+
+            <?php foreach ($multiple_choice as $question): ?>
+
+                <h3>
+                    <?php
+                    echo htmlspecialchars(
+                        $question["question_text"]
+                    );
+                    ?>
+                </h3>
+
+                <table>
+
+                    <tr>
+                        <th>Option</th>
+                        <th>Responses</th>
+                    </tr>
+
+                    <?php foreach ($question["options"] as $option): ?>
+
+                        <tr>
+
+                            <td>
+                                <?php
+                                echo htmlspecialchars(
+                                    $option["option_text"]
+                                );
+                                ?>
+                            </td>
+
+                            <td>
+                                <?php
+                                echo $option["response_count"];
+                                ?>
+                            </td>
+
+                        </tr>
+
+                    <?php endforeach; ?>
+
+                </table>
+
+            <?php endforeach; ?>
+
+        <?php else: ?>
+
+            <p>
+                No multiple-choice questions available.
+            </p>
+
+        <?php endif; ?>
+
+    </div>
 
     <!-- TEXT FEEDBACK -->
 
